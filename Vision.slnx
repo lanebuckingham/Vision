@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/CredentialService/">
+    <Project Path="src/CredentialService/Vision.CredentialService.csproj" />
+  </Folder>
+  <Folder Name="/src/SecurityOperationsService/">
+    <Project Path="src/SecurityOperationsService/Vision.SecurityOperationsService.csproj" />
+  </Folder>
+  <Folder Name="/src/WorkOrderService/">
+    <Project Path="src/WorkOrderService/Vision.WorkOrderService.csproj" />
+  </Folder>
+</Solution>

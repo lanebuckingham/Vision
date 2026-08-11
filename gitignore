@@ -1,0 +1,264 @@
+# ============================================================
+# Vision - .gitignore
+# .NET + Next.js + Terraform + Azure/AWS + PostgreSQL/Neon
+# ============================================================
+
+# ------------------------------------------------------------
+# Environment variables and local secrets
+# ------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+*.env
+*.env.local
+
+# Generic secret/config files
+secrets.json
+secrets.*.json
+*.secrets.json
+*.secret
+*.secrets
+
+# Local-only application settings
+appsettings.Local.json
+appsettings.*.Local.json
+appsettings.local.json
+appsettings.*.local.json
+
+# Optional: keep machine-specific development settings out of Git.
+# If appsettings.Development.json is intentionally source-controlled,
+# leave it tracked and put secrets in environment variables / user-secrets.
+appsettings.Development.local.json
+
+# Certificates, keys, credentials
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
+*.cer
+*.jks
+*.keystore
+
+# SSH / credential material
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# AWS local credentials/config if ever copied into the repo
+.aws/
+aws-credentials
+credentials.aws
+
+# Azure local/auth artifacts
+.azure/
+
+# ------------------------------------------------------------
+# .NET / C#
+# ------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+artifacts/
+
+*.dll
+*.exe
+*.pdb
+*.cache
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.nupkg
+*.snupkg
+
+# NuGet
+packages/
+*.nuget.props
+*.nuget.targets
+
+# Test output / coverage
+TestResults/
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+*.trx
+
+# Benchmark output
+BenchmarkDotNet.Artifacts/
+
+# ASP.NET / generated
+wwwroot/dist/
+wwwroot/lib/
+
+# ------------------------------------------------------------
+# Node / Next.js / React / TypeScript
+# ------------------------------------------------------------
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+.vercel/
+
+# Next.js local env files are covered by .env rules above
+
+# Package-manager caches / logs
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts
+
+# ------------------------------------------------------------
+# Terraform / Infrastructure
+# ------------------------------------------------------------
+.terraform/
+.terraform.lock.hcl.backup
+
+# Terraform state contains sensitive infrastructure data
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Variable files frequently contain secrets
+*.tfvars
+*.tfvars.json
+
+# Allow safe examples/templates
+!*.tfvars.example
+!*.tfvars.sample
+!*.tfvars.template
+
+# Terraform override files are normally local
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+tfplan
+
+# ------------------------------------------------------------
+# Docker / local containers
+# ------------------------------------------------------------
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Local volumes/data if created inside repository
+docker-data/
+volumes/
+postgres-data/
+pgdata/
+
+# ------------------------------------------------------------
+# PostgreSQL / database dumps
+# ------------------------------------------------------------
+*.sql.dump
+*.dump
+*.backup
+*.bak
+*.sqlite
+*.sqlite3
+*.db
+
+# ------------------------------------------------------------
+# IDE / editor files
+# ------------------------------------------------------------
+.vs/
+.idea/
+
+# VS Code machine-local files.
+# Remove these rules if the team later decides to commit shared settings.
+.vscode/
+*.code-workspace
+
+# Rider / ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# ------------------------------------------------------------
+# macOS
+# ------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# ------------------------------------------------------------
+# Windows
+# ------------------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ------------------------------------------------------------
+# Logs / temporary files
+# ------------------------------------------------------------
+logs/
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/
+
+# ------------------------------------------------------------
+# Local tooling / generated files
+# ------------------------------------------------------------
+.local/
+.localhost/
+dev-data/
+
+# Kiro local/cache metadata (keep steering/spec source files tracked)
+.kiro/cache/
+.kiro/tmp/
+.kiro/logs/
+
+# ------------------------------------------------------------
+# Security scanners / local reports
+# ------------------------------------------------------------
+security-reports/
+scan-results/
+*.sarif
+
+# ------------------------------------------------------------
+# Explicitly keep documentation and safe examples
+# ------------------------------------------------------------
+!README.md
+!docs/
+!docs/**
+!.kiro/steering/
+!.kiro/steering/**

@@ -1,0 +1,22 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!--
+    Suppress a specific known transitive vulnerability in Microsoft.OpenApi 2.0.0
+    pulled by Microsoft.AspNetCore.OpenApi. This is not actionable on our side — the
+    fix depends on Microsoft shipping a patched OpenApi package.
+    Advisory: https://github.com/advisories/GHSA-v5pm-xwqc-g5wc
+    Remove this suppression once the transitive dependency is updated.
+  -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v5pm-xwqc-g5wc" />
+  </ItemGroup>
+
+</Project>
