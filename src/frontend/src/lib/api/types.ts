@@ -104,7 +104,7 @@ export interface IncidentDetailDto {
 
 export interface CreateIncidentRequest {
   locationId: string;
-  securityAssetId?: string;
+  assetId?: string;
   title: string;
   description: string;
   severity: IncidentSeverity;
@@ -167,3 +167,116 @@ export type AssetType = "Camera" | "AccessControlledDoor" | "BadgeReader" | "Sec
 export type AssetStatus = "Operational" | "Degraded" | "Offline";
 export type IncidentSeverity = "Low" | "Medium" | "High" | "Critical";
 export type IncidentStatus = "Open" | "Investigating" | "Resolved";
+
+// Work Orders
+export type WorkOrderStatus = "New" | "Assigned" | "InProgress" | "Completed";
+export type WorkOrderPriority = "Low" | "Medium" | "High" | "Critical";
+
+export interface AssignedTechnicianSummaryDto {
+  id: string;
+  displayName: string;
+  specialty: string | null;
+}
+
+export interface AssignedTechnicianDetailDto {
+  id: string;
+  displayName: string;
+  email: string;
+  specialty: string | null;
+  isActive: boolean;
+}
+
+export interface TechnicianNoteDto {
+  id: string;
+  technicianId: string;
+  technicianDisplayName: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface WorkOrderListItemDto {
+  id: string;
+  title: string;
+  priority: WorkOrderPriority;
+  status: WorkOrderStatus;
+  securityAssetId: string;
+  securityIncidentId: string | null;
+  assetName: string | null;
+  locationName: string | null;
+  assignedTechnician: AssignedTechnicianSummaryDto | null;
+  assignedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkOrderDetailDto {
+  id: string;
+  securityAssetId: string;
+  securityIncidentId: string | null;
+  title: string;
+  description: string;
+  priority: WorkOrderPriority;
+  status: WorkOrderStatus;
+  assetName: string | null;
+  locationName: string | null;
+  assignedTechnician: AssignedTechnicianDetailDto | null;
+  assignedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  completionSummary: string | null;
+  createdAt: string;
+  updatedAt: string;
+  notes: TechnicianNoteDto[];
+}
+
+export interface CreateWorkOrderRequest {
+  securityAssetId: string;
+  securityIncidentId?: string;
+  title: string;
+  description: string;
+  priority: WorkOrderPriority;
+  assetName?: string;
+  locationName?: string;
+}
+
+export interface AssignTechnicianRequest {
+  technicianId: string;
+}
+
+export interface AddTechnicianNoteRequest {
+  content: string;
+}
+
+export interface CompleteWorkOrderRequest {
+  completionSummary?: string;
+}
+
+export interface WorkOrderSummaryDto {
+  openCount: number;
+  byStatus: {
+    new: number;
+    assigned: number;
+    inProgress: number;
+    completed: number;
+  };
+}
+
+// Technicians
+export interface TechnicianListItemDto {
+  id: string;
+  displayName: string;
+  email: string;
+  specialty: string | null;
+  isActive: boolean;
+}
+
+export interface TechnicianDetailDto {
+  id: string;
+  displayName: string;
+  email: string;
+  specialty: string | null;
+  isActive: boolean;
+  createdAt: string;
+}

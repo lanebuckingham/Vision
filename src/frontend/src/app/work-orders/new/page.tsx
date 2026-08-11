@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createIncident, getAssets } from "@/lib/api/client";
-import type { AssetListItemDto, IncidentSeverity } from "@/lib/api/types";
+import { createWorkOrder, getAssets } from "@/lib/api/client";
+import type { AssetListItemDto, WorkOrderPriority } from "@/lib/api/types";
 
-const SEVERITY_OPTIONS: IncidentSeverity[] = ["Critical", "High", "Medium", "Low"];
+const PRIORITY_OPTIONS: WorkOrderPriority[] = ["Critical", "High", "Medium", "Low"];
 
-export default function CreateIncidentPage() {
+export default function CreateWorkOrderPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,10 +16,10 @@ export default function CreateIncidentPage() {
   const [assetsError, setAssetsError] = useState<string | null>(null);
 
   // Form state
+  const [selectedAssetId, setSelectedAssetId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<IncidentSeverity>("Medium");
-  const [selectedAssetId, setSelectedAssetId] = useState("");
+  const [priority, setPriority] = useState<WorkOrderPriority>("Medium");
 
   // Load assets for selection
   useEffect(() => {
@@ -29,12 +29,11 @@ export default function CreateIncidentPage() {
   }, []);
 
   const selectedAsset = assets.find((a) => a.id === selectedAssetId);
-  const locationId = selectedAsset?.location.id;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!locationId) {
-      setError("Please select an asset to determine the location.");
+    if (!selectedAssetId) {
+      setError("Please select an asset.");
       return;
     }
 
@@ -42,16 +41,17 @@ export default function CreateIncidentPage() {
     setError(null);
 
     try {
-      const result = await createIncident({
-        locationId,
-        assetId: selectedAssetId || undefined,
+      const result = await createWorkOrder({
+        securityAssetId: selectedAssetId,
         title,
         description,
-        severity,
+        priority,
+        assetName: selectedAsset?.name,
+        locationName: selectedAsset?.location.name,
       });
-      router.push(`/incidents/${result.id}`);
+      router.push(`/work-orders/${result.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create incident");
+      setError(e instanceof Error ? e.message : "Failed to create work order");
       setSubmitting(false);
     }
   };
@@ -59,10 +59,10 @@ export default function CreateIncidentPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <Link href="/incidents" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-          ← Back to Incidents
+        <Link href="/work-orders" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+          ← Back to Work Orders
         </Link>
-        <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">Create Security Incident</h1>
+        <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">Create Work Order</h1>
       </div>
 
       {error && (
@@ -115,18 +115,20 @@ export default function CreateIncidentPage() {
           )}
         </div>
 
-        {/* Severity */}
+        {/* Priority */}
         <div>
-          <label htmlFor="severity" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Severity
+          <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Priority
           </label>
           <select
-            id="severity"
-            value={severity}
-            onChange={(e) => setSeverity(e.target.value as IncidentSeverity)}
+            id="priority"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as WorkOrderPriority)}
             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           >
-            {SEVERITY_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+            {PRIORITY_OPTIONS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
           </select>
         </div>
 
@@ -143,7 +145,7 @@ export default function CreateIncidentPage() {
             maxLength={150}
             required
             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            placeholder="Brief description of the incident"
+            placeholder="Brief description of the maintenance needed"
           />
         </div>
 
@@ -160,7 +162,7 @@ export default function CreateIncidentPage() {
             required
             rows={4}
             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            placeholder="Detailed description of the security incident..."
+            placeholder="Detailed description of the repair or maintenance work needed..."
           />
         </div>
 
@@ -171,10 +173,10 @@ export default function CreateIncidentPage() {
             disabled={submitting || !title.trim() || !description.trim() || !selectedAssetId}
             className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {submitting ? "Creating..." : "Create Incident"}
+            {submitting ? "Creating..." : "Create Work Order"}
           </button>
           <Link
-            href="/incidents"
+            href="/work-orders"
             className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             Cancel

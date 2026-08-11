@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: "📊" },
+  { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/assets", label: "Assets", icon: "🔒" },
   { href: "/incidents", label: "Incidents", icon: "⚠️" },
+  { href: "/work-orders", label: "Work Orders", icon: "🔧" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -17,15 +18,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-gray-200 md:bg-gray-50 dark:md:border-gray-800 dark:md:bg-gray-900">
         <div className="flex h-16 items-center border-b border-gray-200 px-6 dark:border-gray-800">
-          <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">
+          <Link href="/dashboard" className="text-xl font-bold text-gray-900 dark:text-white">
             Vision
           </Link>
         </div>
         <nav className="flex-1 px-4 py-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+            const isActive = pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -53,14 +52,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center justify-between border-b border-gray-200 px-4 md:hidden dark:border-gray-800">
-          <Link href="/" className="text-lg font-bold text-gray-900 dark:text-white">
+          <Link href="/dashboard" className="text-lg font-bold text-gray-900 dark:text-white">
             Vision
           </Link>
           <nav className="flex gap-4">
             {navItems.map((item) => {
-              const isActive = item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
+              const isActive = pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
