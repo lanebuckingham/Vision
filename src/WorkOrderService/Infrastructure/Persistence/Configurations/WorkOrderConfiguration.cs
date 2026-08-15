@@ -58,8 +58,11 @@ public class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
         });
 
         builder.HasIndex(w => w.Status);
+        builder.HasIndex(w => w.Priority);
         builder.HasIndex(w => w.AssignedTechnicianId);
         builder.HasIndex(w => w.SecurityAssetId);
+        builder.HasIndex(w => w.CreatedAt)
+            .IsDescending();
         builder.HasIndex(w => w.SecurityIncidentId).IsUnique()
             .HasFilter("security_incident_id IS NOT NULL");
         builder.HasIndex(w => w.SourceEventId).IsUnique()

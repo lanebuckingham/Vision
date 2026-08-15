@@ -16,6 +16,7 @@ public static class SeedDataIds
     public static readonly Guid WorkOrderCompleted = new("b1a2b3c4-2001-4fff-a201-200000000001");
     public static readonly Guid WorkOrderInProgress = new("b1a2b3c4-2002-4fff-a202-200000000002");
     public static readonly Guid WorkOrderAssigned = new("b1a2b3c4-2003-4fff-a203-200000000003");
+    public static readonly Guid WorkOrderNew = new("b1a2b3c4-2004-4fff-a204-200000000004");
 
     // Technician Notes
     public static readonly Guid NoteCompletedWorkOrder = new("c1a2b3c4-3001-4aaa-a301-300000000001");
@@ -26,6 +27,7 @@ public static class SeedDataIds
     public static readonly Guid DataCenterCamera = new("e1a2b3c4-8001-4ddd-a111-111111111111");
     public static readonly Guid MainLobbyGate = new("e1a2b3c4-2006-4ddd-a111-111111111111");
     public static readonly Guid AdminBadgeReader = new("e1a2b3c4-6004-4ddd-a111-111111111111");
+    public static readonly Guid EmergencyDepartmentDoor = new("e1a2b3c4-3002-4ddd-a111-111111111111");
 
     // Cross-service incident references
     public static readonly Guid DataCenterCameraIncident = new("3f896236-5741-44d2-ac41-34aa2acb5b68");

@@ -166,6 +166,13 @@ namespace Vision.WorkOrderService.Infrastructure.Persistence.Migrations
                     b.HasIndex("AssignedTechnicianId")
                         .HasDatabaseName("ix_work_orders_assigned_technician_id");
 
+                    b.HasIndex("CreatedAt")
+                        .IsDescending()
+                        .HasDatabaseName("ix_work_orders_created_at");
+
+                    b.HasIndex("Priority")
+                        .HasDatabaseName("ix_work_orders_priority");
+
                     b.HasIndex("SecurityAssetId")
                         .HasDatabaseName("ix_work_orders_security_asset_id");
 

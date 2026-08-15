@@ -12,11 +12,14 @@ public sealed class UpdateIncidentStatusCommandValidator : AbstractValidator<Upd
 
         RuleFor(x => x.Status)
             .NotEmpty().WithMessage("Status is required.")
-            .Must(s => Enum.TryParse<IncidentStatus>(s, ignoreCase: true, out _))
+            .Must(BeDefinedEnum<IncidentStatus>)
             .WithMessage("Invalid status. Valid values: Open, Investigating, Resolved.");
 
         RuleFor(x => x.ResolutionSummary)
             .NotEmpty().WithMessage("Resolution summary is required when resolving an incident.")
             .When(x => string.Equals(x.Status, "Resolved", StringComparison.OrdinalIgnoreCase));
     }
+
+    private static bool BeDefinedEnum<TEnum>(string? value) where TEnum : struct, Enum
+        => Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed);
 }

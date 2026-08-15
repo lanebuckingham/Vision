@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getIncidentById, updateIncidentStatus } from "@/lib/api/client";
-import type { IncidentDetailDto, IncidentStatus } from "@/lib/api/types";
+import { getIncidentById, updateIncidentStatus, getWorkOrders } from "@/lib/api/client";
+import type { IncidentDetailDto, IncidentStatus, WorkOrderListItemDto } from "@/lib/api/types";
 
 export default function IncidentDetailPage() {
   const params = useParams<{ id: string }>();
@@ -16,6 +16,10 @@ export default function IncidentDetailPage() {
   const [showResolveForm, setShowResolveForm] = useState(false);
   const [resolutionSummary, setResolutionSummary] = useState("");
 
+  // WorkOrder discovery
+  const [linkedWorkOrder, setLinkedWorkOrder] = useState<WorkOrderListItemDto | null>(null);
+  const [workOrderPending, setWorkOrderPending] = useState(false);
+
   useEffect(() => {
     if (!params.id) return;
     getIncidentById(params.id)
@@ -23,6 +27,50 @@ export default function IncidentDetailPage() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [params.id]);
+
+  // Discover linked WorkOrder by incidentId
+  const discoverWorkOrder = useCallback(async (incidentId: string) => {
+    try {
+      const result = await getWorkOrders({ incidentId, pageSize: 1 });
+      if (result.items.length > 0) {
+        setLinkedWorkOrder(result.items[0]);
+        setWorkOrderPending(false);
+        return true;
+      }
+    } catch {
+      // WorkOrderService may be unavailable — not critical for incident page
+    }
+    return false;
+  }, []);
+
+  // On incident load, try to find associated WorkOrder
+  useEffect(() => {
+    if (!incident) return;
+    discoverWorkOrder(incident.id);
+  }, [incident, discoverWorkOrder]);
+
+  // Bounded polling for qualifying incidents (Critical + asset) that just had WO created async
+  useEffect(() => {
+    if (!incident) return;
+    if (linkedWorkOrder) return;
+    // Only poll for qualifying incidents
+    if (incident.severity !== "Critical" || !incident.asset) return;
+    if (incident.status === "Resolved") return;
+
+    setWorkOrderPending(true);
+    let attempts = 0;
+    const maxAttempts = 10;
+    const interval = setInterval(async () => {
+      attempts++;
+      const found = await discoverWorkOrder(incident.id);
+      if (found || attempts >= maxAttempts) {
+        clearInterval(interval);
+        if (!found) setWorkOrderPending(false);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [incident, linkedWorkOrder, discoverWorkOrder]);
 
   const handleTransition = async (newStatus: IncidentStatus, summary?: string) => {
     if (!incident) return;
@@ -108,9 +156,6 @@ export default function IncidentDetailPage() {
             {incident.resolvedAt && (
               <DetailRow label="Resolved" value={new Date(incident.resolvedAt).toLocaleString()} />
             )}
-            {incident.workOrderId && (
-              <DetailRow label="Work Order" value={incident.workOrderId} />
-            )}
           </dl>
         </div>
 
@@ -132,6 +177,35 @@ export default function IncidentDetailPage() {
           </dl>
         </div>
       </div>
+
+      {/* Linked Work Order */}
+      {linkedWorkOrder && (
+        <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-900 dark:bg-purple-950">
+          <h2 className="mb-2 text-sm font-semibold text-purple-800 dark:text-purple-200">Work Order</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-900 dark:text-purple-100">{linkedWorkOrder.title}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400">
+                {linkedWorkOrder.status === "InProgress" ? "In Progress" : linkedWorkOrder.status}
+                {linkedWorkOrder.assignedTechnician && ` · ${linkedWorkOrder.assignedTechnician.displayName}`}
+              </p>
+            </div>
+            <Link
+              href={`/work-orders/${linkedWorkOrder.id}`}
+              className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700"
+            >
+              View Work Order
+            </Link>
+          </div>
+        </div>
+      )}
+      {workOrderPending && !linkedWorkOrder && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Work order is being created...
+          </p>
+        </div>
+      )}
 
       {/* Resolution Summary */}
       {incident.resolutionSummary && (

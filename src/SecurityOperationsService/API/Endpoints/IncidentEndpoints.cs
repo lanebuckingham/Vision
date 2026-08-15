@@ -1,4 +1,5 @@
 using MediatR;
+using Vision.SecurityOperationsService.Application.Common;
 using Vision.SecurityOperationsService.Application.Incidents.Commands;
 using Vision.SecurityOperationsService.Application.Incidents.Queries;
 
@@ -13,7 +14,7 @@ public static class IncidentEndpoints
 
         group.MapGet("/", GetIncidents)
             .WithName("GetIncidents")
-            .Produces<object>(StatusCodes.Status200OK)
+            .Produces<PagedList<IncidentListItemDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("/{id:guid}", GetIncidentById)

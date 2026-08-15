@@ -10,6 +10,8 @@ import {
   addTechnicianNote,
   completeWorkOrder,
   getTechnicians,
+  updateAssetStatus,
+  updateIncidentStatus,
 } from "@/lib/api/client";
 import type {
   WorkOrderDetailDto,
@@ -31,6 +33,7 @@ export default function WorkOrderDetailPage() {
 
   // Assignment state
   const [technicians, setTechnicians] = useState<TechnicianListItemDto[]>([]);
+  const [techniciansError, setTechniciansError] = useState<string | null>(null);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
   const [showAssign, setShowAssign] = useState(false);
 
@@ -51,9 +54,10 @@ export default function WorkOrderDetailPage() {
   }, [id]);
 
   const loadTechnicians = () => {
+    setTechniciansError(null);
     getTechnicians({ activeOnly: true, pageSize: 50 })
       .then((data) => setTechnicians(data.items))
-      .catch(() => {});
+      .catch((e) => setTechniciansError(e instanceof Error ? e.message : "Failed to load technicians"));
   };
 
   const handleAssign = async () => {
@@ -113,8 +117,58 @@ export default function WorkOrderDetailPage() {
       setWo(updated);
       setShowCompleteForm(false);
       setCompletionSummary("");
+
+      // Orchestrate repair-to-dashboard: mark asset Operational, resolve incident
+      if (updated.securityIncidentId && updated.securityAssetId) {
+        try {
+          await updateAssetStatus(updated.securityAssetId, "Operational");
+        } catch (e) {
+          setActionError(
+            "Work order completed, but asset status update failed. " +
+            (e instanceof Error ? e.message : "Please update the asset manually.")
+          );
+          return;
+        }
+
+        try {
+          await updateIncidentStatus(updated.securityIncidentId, {
+            status: "Resolved",
+            resolutionSummary: `Repair completed: ${updated.completionSummary || "See work order notes."}`,
+          });
+        } catch (e) {
+          setActionError(
+            "Work order completed and asset restored, but incident resolution failed. " +
+            (e instanceof Error ? e.message : "Please resolve the incident manually.")
+          );
+          return;
+        }
+      }
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Failed to complete work order");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRetrySecurityUpdate = async () => {
+    if (!wo || !wo.securityAssetId || !wo.securityIncidentId) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await updateAssetStatus(wo.securityAssetId, "Operational");
+      await updateIncidentStatus(wo.securityIncidentId, {
+        status: "Resolved",
+        resolutionSummary: `Repair completed: ${wo.completionSummary || "See work order notes."}`,
+      });
+      setActionError(null);
+      // Refresh to confirm state
+      const updated = await getWorkOrderById(id);
+      setWo(updated);
+    } catch (e) {
+      setActionError(
+        "Security status update failed. " +
+        (e instanceof Error ? e.message : "Please try again.")
+      );
     } finally {
       setActionLoading(false);
     }
@@ -217,6 +271,7 @@ export default function WorkOrderDetailPage() {
                     id="technician-select"
                     value={selectedTechnicianId}
                     onChange={(e) => setSelectedTechnicianId(e.target.value)}
+                    disabled={!!techniciansError}
                     className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                   >
                     <option value="">Choose a technician...</option>
@@ -226,6 +281,18 @@ export default function WorkOrderDetailPage() {
                       </option>
                     ))}
                   </select>
+                  {techniciansError && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <p className="text-sm text-red-600 dark:text-red-400">{techniciansError}</p>
+                      <button
+                        type="button"
+                        onClick={loadTechnicians}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={handleAssign}
@@ -269,6 +336,30 @@ export default function WorkOrderDetailPage() {
             >
               Complete Work
             </button>
+          </div>
+        )}
+
+        {wo.status === "Completed" && wo.securityIncidentId && wo.securityAssetId && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+            <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">Security Status Update</h3>
+            <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+              Mark the asset as operational and resolve the related incident to update dashboard health.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <button
+                onClick={handleRetrySecurityUpdate}
+                disabled={actionLoading}
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {actionLoading ? "Updating..." : "Finish Security Resolution"}
+              </button>
+              <Link
+                href="/dashboard"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Return to Dashboard
+              </Link>
+            </div>
           </div>
         )}
       </section>

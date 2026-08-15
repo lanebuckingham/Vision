@@ -75,18 +75,37 @@ public sealed class GetSecurityDashboardQueryHandler(SecurityOperationsDbContext
                 i.CreatedAt))
             .ToListAsync(cancellationToken);
 
-        // Recent activity — most recent incidents (created or resolved)
-        var recentActivity = await db.SecurityIncidents
+        // Recent activity — creation and resolution events with truthful timestamps
+        var createdActivity = await db.SecurityIncidents
             .AsNoTracking()
-            .OrderByDescending(i => i.UpdatedAt)
+            .OrderByDescending(i => i.CreatedAt)
             .Take(RecentActivityLimit)
             .Select(i => new RecentActivityDto(
-                i.Status == IncidentStatus.Resolved ? "IncidentResolved" : "IncidentCreated",
+                "IncidentCreated",
                 i.Title,
-                i.Status == IncidentStatus.Resolved ? i.ResolvedAt!.Value : i.CreatedAt,
+                i.CreatedAt,
                 i.Id,
                 i.SecurityAssetId))
             .ToListAsync(cancellationToken);
+
+        var resolvedActivity = await db.SecurityIncidents
+            .AsNoTracking()
+            .Where(i => i.Status == IncidentStatus.Resolved && i.ResolvedAt != null)
+            .OrderByDescending(i => i.ResolvedAt)
+            .Take(RecentActivityLimit)
+            .Select(i => new RecentActivityDto(
+                "IncidentResolved",
+                i.Title,
+                i.ResolvedAt!.Value,
+                i.Id,
+                i.SecurityAssetId))
+            .ToListAsync(cancellationToken);
+
+        var recentActivity = createdActivity
+            .Concat(resolvedActivity)
+            .OrderByDescending(a => a.OccurredAt)
+            .Take(RecentActivityLimit)
+            .ToList();
 
         return new SecurityDashboardDto(hospital, securityHealth, incidents, criticalAlerts, recentActivity);
     }

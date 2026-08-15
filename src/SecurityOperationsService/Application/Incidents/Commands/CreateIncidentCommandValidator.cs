@@ -20,7 +20,10 @@ public sealed class CreateIncidentCommandValidator : AbstractValidator<CreateInc
 
         RuleFor(x => x.Severity)
             .NotEmpty().WithMessage("Severity is required.")
-            .Must(s => Enum.TryParse<IncidentSeverity>(s, ignoreCase: true, out _))
+            .Must(BeDefinedEnum<IncidentSeverity>)
             .WithMessage("Invalid severity. Valid values: Low, Medium, High, Critical.");
     }
+
+    private static bool BeDefinedEnum<TEnum>(string? value) where TEnum : struct, Enum
+        => Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed);
 }

@@ -2,17 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getDashboard } from "@/lib/api/client";
-import type { SecurityDashboardDto } from "@/lib/api/types";
+import { getDashboard, getWorkOrderSummary } from "@/lib/api/client";
+import type { SecurityDashboardDto, WorkOrderSummaryDto } from "@/lib/api/types";
 
 export default function DashboardPage() {
   const [data, setData] = useState<SecurityDashboardDto | null>(null);
+  const [woSummary, setWoSummary] = useState<WorkOrderSummaryDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDashboard()
-      .then(setData)
+    Promise.all([
+      getDashboard(),
+      getWorkOrderSummary().catch(() => null),
+    ])
+      .then(([dashboardData, workOrderData]) => {
+        setData(dashboardData);
+        setWoSummary(workOrderData);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -69,6 +76,20 @@ export default function DashboardPage() {
           status={incidents.activeCritical === 0 ? "good" : "critical"}
         />
       </div>
+
+      {/* Work Orders */}
+      {woSummary && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/work-orders" className="block">
+            <StatCard
+              label="Open Work Orders"
+              value={woSummary.openCount.toString()}
+              detail={`${woSummary.byStatus.new} new · ${woSummary.byStatus.inProgress} in progress`}
+              status={woSummary.openCount === 0 ? "good" : woSummary.openCount <= 3 ? "warning" : "critical"}
+            />
+          </Link>
+        </div>
+      )}
 
       {/* Critical Alerts */}
       <section>

@@ -49,17 +49,44 @@ public class WorkOrder
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    public void Complete(string completionSummary)
+    public void Complete(string? completionSummary)
     {
-        if (string.IsNullOrWhiteSpace(completionSummary))
-            throw new ArgumentException("Completion summary is required.", nameof(completionSummary));
-
         if (Status != WorkOrderStatus.InProgress)
             throw new InvalidOperationException($"Work order must be in InProgress status to complete. Current status: {Status}.");
 
+        if (string.IsNullOrWhiteSpace(completionSummary) && Notes.Count == 0)
+            throw new InvalidOperationException("Completion requires either a completion summary or at least one technician note.");
+
         Status = WorkOrderStatus.Completed;
-        CompletionSummary = completionSummary;
+
+        if (!string.IsNullOrWhiteSpace(completionSummary))
+            CompletionSummary = completionSummary;
+
         CompletedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void AddNote(Guid technicianId, string content)
+    {
+        if (Status == WorkOrderStatus.New)
+            throw new InvalidOperationException("Cannot add notes to a work order in New status.");
+
+        if (Status == WorkOrderStatus.Completed)
+            throw new InvalidOperationException("Cannot add notes to a completed work order.");
+
+        if (string.IsNullOrWhiteSpace(content))
+            throw new ArgumentException("Note content is required.", nameof(content));
+
+        var note = new TechnicianNote
+        {
+            Id = Guid.NewGuid(),
+            WorkOrderId = Id,
+            TechnicianId = technicianId,
+            Content = content,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        Notes.Add(note);
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 }

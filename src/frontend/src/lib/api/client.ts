@@ -78,6 +78,13 @@ export function getAssetById(id: string): Promise<AssetDetailDto> {
   return fetchApi(`/api/v1/assets/${id}`);
 }
 
+export function updateAssetStatus(id: string, status: string): Promise<AssetDetailDto> {
+  return fetchApi(`/api/v1/assets/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
 // Incidents
 export function getIncidents(params?: {
   status?: string;

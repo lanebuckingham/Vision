@@ -144,6 +144,20 @@ public static class WorkOrderSeeder
                 AssignedAt = now.AddDays(-1),
                 CreatedAt = threeDaysAgo,
                 UpdatedAt = now.AddDays(-1)
+            },
+            // New work order — manual maintenance request, no incident
+            new WorkOrder
+            {
+                Id = SeedDataIds.WorkOrderNew,
+                SecurityAssetId = SeedDataIds.EmergencyDepartmentDoor,
+                Title = "Emergency department door alignment inspection",
+                Description = "Door closing slowly after opening. Needs hydraulic closer inspection and possible adjustment.",
+                Priority = WorkOrderPriority.Low,
+                Status = WorkOrderStatus.New,
+                AssetNameSnapshot = "ER Door 01",
+                LocationNameSnapshot = "Emergency Department",
+                CreatedAt = now.AddHours(-6),
+                UpdatedAt = now.AddHours(-6)
             }
         ];
     }

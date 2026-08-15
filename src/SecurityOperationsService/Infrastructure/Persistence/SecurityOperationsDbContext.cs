@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Vision.SecurityOperationsService.Domain;
+using Vision.SecurityOperationsService.Infrastructure.Messaging;
 
 namespace Vision.SecurityOperationsService.Infrastructure.Persistence;
 
@@ -11,6 +12,7 @@ public class SecurityOperationsDbContext(DbContextOptions<SecurityOperationsDbCo
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<SecurityAsset> SecurityAssets => Set<SecurityAsset>();
     public DbSet<SecurityIncident> SecurityIncidents => Set<SecurityIncident>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

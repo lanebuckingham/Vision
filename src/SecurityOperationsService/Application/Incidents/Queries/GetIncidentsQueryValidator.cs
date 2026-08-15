@@ -14,13 +14,16 @@ public sealed class GetIncidentsQueryValidator : AbstractValidator<GetIncidentsQ
             .InclusiveBetween(1, 100);
 
         RuleFor(x => x.Status)
-            .Must(s => Enum.TryParse<IncidentStatus>(s, ignoreCase: true, out _))
+            .Must(BeDefinedEnum<IncidentStatus>)
             .When(x => !string.IsNullOrWhiteSpace(x.Status))
             .WithMessage("Invalid incident status. Valid values: Open, Investigating, Resolved.");
 
         RuleFor(x => x.Severity)
-            .Must(s => Enum.TryParse<IncidentSeverity>(s, ignoreCase: true, out _))
+            .Must(BeDefinedEnum<IncidentSeverity>)
             .When(x => !string.IsNullOrWhiteSpace(x.Severity))
             .WithMessage("Invalid incident severity. Valid values: Low, Medium, High, Critical.");
     }
+
+    private static bool BeDefinedEnum<TEnum>(string? value) where TEnum : struct, Enum
+        => Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed);
 }
