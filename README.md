@@ -408,7 +408,11 @@ Vision should support both a simple local environment and a Kubernetes learning 
 
 ## Docker Compose
 
-The normal local-development path should allow the application to run through Docker Compose.
+The normal local-development path allows the full application to run through Docker Compose:
+
+```bash
+docker compose up --build
+```
 
 ```text
 Developer
@@ -421,7 +425,12 @@ Docker Compose
    +-- Work Order Service
    +-- Credential Service
    +-- PostgreSQL
+   +-- LocalStack (SQS emulation)
 ```
+
+See [`docs/development/docker.md`](docs/development/docker.md) for prerequisites,
+day-to-day commands (start/stop/reset), the infrastructure-only workflow, health
+checks, and how Cognito/OTLP configuration flows into containers.
 
 ## Kubernetes
 

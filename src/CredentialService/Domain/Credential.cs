@@ -38,8 +38,9 @@ public class Credential
         if (RevokedAt is not null)
             return;
 
-        RevokedAt = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.UtcNow;
+        RevokedAt = now;
         RevocationReason = reason;
-        UpdatedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = now;
     }
 }

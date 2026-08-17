@@ -10,6 +10,12 @@
     <Project Path="src/WorkOrderService/Vision.WorkOrderService.csproj" />
   </Folder>
   <Folder Name="/tests/" />
+  <Folder Name="/tests/CredentialService.Tests/">
+    <Project Path="tests/CredentialService.Tests/Vision.CredentialService.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/SecurityOperationsService.Tests/">
+    <Project Path="tests/SecurityOperationsService.Tests/Vision.SecurityOperationsService.Tests.csproj" />
+  </Folder>
   <Folder Name="/tests/WorkOrderService.Tests/">
     <Project Path="tests/WorkOrderService.Tests/Vision.WorkOrderService.Tests.csproj" />
   </Folder>

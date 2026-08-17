@@ -50,6 +50,11 @@ public class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
             noteBuilder.WithOwner(n => n.WorkOrder).HasForeignKey(n => n.WorkOrderId);
             noteBuilder.HasKey(n => n.Id);
 
+            // Note IDs are assigned by WorkOrder.AddNote. Without this, EF treats a new
+            // note added to an already-tracked work order as an existing row and issues
+            // an UPDATE instead of an INSERT.
+            noteBuilder.Property(n => n.Id).ValueGeneratedNever();
+
             noteBuilder.Property(n => n.Content)
                 .IsRequired()
                 .HasMaxLength(2000);

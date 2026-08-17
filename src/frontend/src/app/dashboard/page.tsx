@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getDashboard, getWorkOrderSummary } from "@/lib/api/client";
-import type { SecurityDashboardDto, WorkOrderSummaryDto } from "@/lib/api/types";
+import { getDashboard, getWorkOrderSummary, getCredentialSummary } from "@/lib/api/client";
+import type { SecurityDashboardDto, WorkOrderSummaryDto, CredentialSummaryDto } from "@/lib/api/types";
 
 export default function DashboardPage() {
   const [data, setData] = useState<SecurityDashboardDto | null>(null);
   const [woSummary, setWoSummary] = useState<WorkOrderSummaryDto | null>(null);
+  const [credSummary, setCredSummary] = useState<CredentialSummaryDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -15,10 +16,12 @@ export default function DashboardPage() {
     Promise.all([
       getDashboard(),
       getWorkOrderSummary().catch(() => null),
+      getCredentialSummary().catch(() => null),
     ])
-      .then(([dashboardData, workOrderData]) => {
+      .then(([dashboardData, workOrderData, credentialData]) => {
         setData(dashboardData);
         setWoSummary(workOrderData);
+        setCredSummary(credentialData);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -86,6 +89,20 @@ export default function DashboardPage() {
               value={woSummary.openCount.toString()}
               detail={`${woSummary.byStatus.new} new · ${woSummary.byStatus.inProgress} in progress`}
               status={woSummary.openCount === 0 ? "good" : woSummary.openCount <= 3 ? "warning" : "critical"}
+            />
+          </Link>
+        </div>
+      )}
+
+      {/* Credentials */}
+      {credSummary && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/credentials" className="block">
+            <StatCard
+              label="Expiring Credentials"
+              value={credSummary.expiringSoonCount.toString()}
+              detail={`${credSummary.activeCount} active total`}
+              status={credSummary.expiringSoonCount === 0 ? "good" : credSummary.expiringSoonCount <= 2 ? "warning" : "critical"}
             />
           </Link>
         </div>

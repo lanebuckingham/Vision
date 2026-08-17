@@ -36,13 +36,18 @@ QUEUE_URL="$(
     --output text
 )"
 
-REDRIVE_POLICY="$(
-  printf '{"deadLetterTargetArn":"%s","maxReceiveCount":"5"}' "${DLQ_ARN}"
+# The AWS CLI's default --attributes shorthand ("Key=Value,Key2=Value2")
+# cannot represent RedrivePolicy, whose value is itself a JSON document
+# containing commas and quotes. Pass --attributes as a JSON document instead,
+# with the inner RedrivePolicy JSON escaped as a string value.
+REDRIVE_POLICY_ESCAPED="$(
+  printf '{\"deadLetterTargetArn\":\"%s\",\"maxReceiveCount\":\"5\"}' "${DLQ_ARN}" \
+    | sed 's/"/\\"/g'
 )"
 
 awslocal sqs set-queue-attributes \
   --queue-url "${QUEUE_URL}" \
-  --attributes "RedrivePolicy=${REDRIVE_POLICY}" \
+  --attributes "{\"RedrivePolicy\":\"${REDRIVE_POLICY_ESCAPED}\"}" \
   --region "${REGION}"
 
 echo "Vision SQS primary queue: ${QUEUE_URL}"

@@ -30,6 +30,7 @@ public static class WorkOrderSeeder
             Email = "marcus.johnson@northstarmedical.com",
             IsActive = true,
             Specialty = "Camera & Video Systems",
+            CognitoSubject = SeedDataIds.CognitoSubTechMarcus,
             CreatedAt = now.AddDays(-90)
         },
         new()
@@ -39,6 +40,7 @@ public static class WorkOrderSeeder
             Email = "sarah.chen@northstarmedical.com",
             IsActive = true,
             Specialty = "Access Control & Door Systems",
+            CognitoSubject = SeedDataIds.CognitoSubTechSarah,
             CreatedAt = now.AddDays(-90)
         },
         new()
@@ -48,6 +50,7 @@ public static class WorkOrderSeeder
             Email = "david.park@northstarmedical.com",
             IsActive = true,
             Specialty = "Network & Badge Readers",
+            CognitoSubject = SeedDataIds.CognitoSubTechDavid,
             CreatedAt = now.AddDays(-60)
         },
         new()
@@ -57,6 +60,7 @@ public static class WorkOrderSeeder
             Email = "lisa.reeves@northstarmedical.com",
             IsActive = true,
             Specialty = "Gate & Perimeter Systems",
+            CognitoSubject = SeedDataIds.CognitoSubTechLisa,
             CreatedAt = now.AddDays(-45)
         }
     ];

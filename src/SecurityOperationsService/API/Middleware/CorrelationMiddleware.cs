@@ -7,7 +7,7 @@ namespace Vision.SecurityOperationsService.API.Middleware;
 /// Uses X-Correlation-ID header if present; otherwise generates one.
 /// Exposes the value through scoped CorrelationContext and response header.
 /// </summary>
-public sealed class CorrelationMiddleware(RequestDelegate next)
+public sealed class CorrelationMiddleware(RequestDelegate next, ILogger<CorrelationMiddleware> logger)
 {
     private const string HeaderName = "X-Correlation-ID";
 
@@ -31,6 +31,17 @@ public sealed class CorrelationMiddleware(RequestDelegate next)
             return Task.CompletedTask;
         });
 
-        await next(context);
+        // Establish a logging scope so every log line emitted while processing this
+        // request — across handlers, EF Core, messaging, etc. — can be searched by
+        // the durable Vision CorrelationId without each call site repeating it.
+        // This complements, not replaces, explicit CorrelationId properties already
+        // logged at points of interest (e.g. incident creation, outbox publish).
+        using (logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = correlationId
+        }))
+        {
+            await next(context);
+        }
     }
 }

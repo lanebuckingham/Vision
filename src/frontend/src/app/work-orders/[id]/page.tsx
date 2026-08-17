@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth/AuthContext";
 import {
   getWorkOrderById,
   assignTechnician,
@@ -23,6 +24,7 @@ import type {
 export default function WorkOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { hasRole } = useAuth();
   const id = params.id as string;
 
   const [wo, setWo] = useState<WorkOrderDetailDto | null>(null);
@@ -117,32 +119,9 @@ export default function WorkOrderDetailPage() {
       setWo(updated);
       setShowCompleteForm(false);
       setCompletionSummary("");
-
-      // Orchestrate repair-to-dashboard: mark asset Operational, resolve incident
-      if (updated.securityIncidentId && updated.securityAssetId) {
-        try {
-          await updateAssetStatus(updated.securityAssetId, "Operational");
-        } catch (e) {
-          setActionError(
-            "Work order completed, but asset status update failed. " +
-            (e instanceof Error ? e.message : "Please update the asset manually.")
-          );
-          return;
-        }
-
-        try {
-          await updateIncidentStatus(updated.securityIncidentId, {
-            status: "Resolved",
-            resolutionSummary: `Repair completed: ${updated.completionSummary || "See work order notes."}`,
-          });
-        } catch (e) {
-          setActionError(
-            "Work order completed and asset restored, but incident resolution failed. " +
-            (e instanceof Error ? e.message : "Please resolve the incident manually.")
-          );
-          return;
-        }
-      }
+      // Technician completion stops here.
+      // Security resolution (asset → Operational, incident → Resolved) is a SecurityManager action
+      // performed via "Finish Security Resolution" by a SecurityManager user.
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Failed to complete work order");
     } finally {
@@ -252,7 +231,7 @@ export default function WorkOrderDetailPage() {
 
       {/* Lifecycle actions */}
       <section className="space-y-3">
-        {wo.status === "New" && (
+        {wo.status === "New" && hasRole("SecurityManager") && (
           <div>
             {!showAssign ? (
               <button
@@ -312,7 +291,7 @@ export default function WorkOrderDetailPage() {
           </div>
         )}
 
-        {wo.status === "Assigned" && (
+        {wo.status === "Assigned" && hasRole("Technician") && (
           <button
             onClick={handleStart}
             disabled={actionLoading}
@@ -322,7 +301,7 @@ export default function WorkOrderDetailPage() {
           </button>
         )}
 
-        {wo.status === "InProgress" && (
+        {wo.status === "InProgress" && hasRole("Technician") && (
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setShowNoteForm(true)}
@@ -339,7 +318,7 @@ export default function WorkOrderDetailPage() {
           </div>
         )}
 
-        {wo.status === "Completed" && wo.securityIncidentId && wo.securityAssetId && (
+        {wo.status === "Completed" && wo.securityIncidentId && wo.securityAssetId && hasRole("SecurityManager") && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
             <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">Security Status Update</h3>
             <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">

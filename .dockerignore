@@ -1,0 +1,65 @@
+# Vision — repository-root .dockerignore
+#
+# Applies to all Docker builds that use the repository root as build context
+# (backend services need root context to see Directory.Build.props /
+# Directory.Packages.props; the frontend build context is scoped to
+# src/frontend but this file is harmless there too).
+#
+# Keep required build inputs visible: Directory.Build.props,
+# Directory.Packages.props, *.csproj, *.sln/*.slnx, package.json,
+# package-lock.json, and application source are NOT excluded here.
+
+# Git
+.git
+.github
+
+# .NET build output
+**/bin/
+**/obj/
+**/[Bb]in/
+**/[Oo]bj/
+**/artifacts/
+
+# .NET test output
+**/TestResults/
+**/coverage/
+**/*.trx
+
+# Node / frontend build output
+**/node_modules/
+**/.next/
+**/out/
+**/coverage/
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+**/.DS_Store
+__MACOSX
+*.swp
+*.swo
+*~
+
+# Environment / secrets — never send these into a build context
+.env
+.env.*
+!.env.example
+*.user
+
+# Terraform (not used by any Docker build)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Misc repo content not needed for image builds
+deploy/terraform/
+deploy/kubernetes/
+deploy/helm/
+docs/
+
+# Test projects are not referenced by any backend Dockerfile's targeted
+# `dotnet publish <csproj>` and are not needed in any image.
+tests/

@@ -12,6 +12,14 @@ public static class SeedDataIds
     public static readonly Guid TechDavidPark = new("a1a2b3c4-1003-4eee-a103-100000000003");
     public static readonly Guid TechLisaReeves = new("a1a2b3c4-1004-4eee-a104-100000000004");
 
+    // Cognito subject IDs for Technician mapping.
+    // These must match the 'sub' claim of the corresponding Cognito user.
+    // See docs/development/cognito-setup.md for provisioning instructions.
+    public const string CognitoSubTechMarcus = "cognito-tech-marcus-johnson";
+    public const string CognitoSubTechSarah = "cognito-tech-sarah-chen";
+    public const string CognitoSubTechDavid = "cognito-tech-david-park";
+    public const string CognitoSubTechLisa = "cognito-tech-lisa-reeves";
+
     // Work Orders
     public static readonly Guid WorkOrderCompleted = new("b1a2b3c4-2001-4fff-a201-200000000001");
     public static readonly Guid WorkOrderInProgress = new("b1a2b3c4-2002-4fff-a202-200000000002");

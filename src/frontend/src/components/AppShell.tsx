@@ -2,16 +2,59 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth, type UserRole } from "@/lib/auth/AuthContext";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "📊" },
-  { href: "/assets", label: "Assets", icon: "🔒" },
-  { href: "/incidents", label: "Incidents", icon: "⚠️" },
-  { href: "/work-orders", label: "Work Orders", icon: "🔧" },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  /** If set, item is visible only to users with at least one of these roles */
+  roles?: UserRole[];
+}
+
+const navItems: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard", icon: "📊", roles: ["SecurityManager"] },
+  { href: "/assets", label: "Assets", icon: "🔒", roles: ["SecurityManager"] },
+  { href: "/incidents", label: "Incidents", icon: "⚠️", roles: ["SecurityManager"] },
+  { href: "/work-orders", label: "Work Orders", icon: "🔧", roles: ["SecurityManager", "Technician"] },
+  { href: "/credentials", label: "Credentials", icon: "🪪", roles: ["SecurityManager", "CredentialAdministrator"] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, isAuthenticated, isLoading, login, logout, hasAnyRole } = useAuth();
+
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || hasAnyRole(...item.roles)
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 mx-auto" />
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Vision</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Physical Security Operations</p>
+          <button
+            onClick={login}
+            className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-screen">
@@ -23,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
         <nav className="flex-1 px-4 py-4 space-y-1">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <Link
@@ -42,10 +85,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
-          <p className="text-xs text-gray-500 dark:text-gray-500">
-            Physical Security Operations
-          </p>
+        <div className="border-t border-gray-200 px-4 py-4 dark:border-gray-800">
+          {user && (
+            <div className="mb-3 px-2">
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500 truncate">{user.roles.join(", ")}</p>
+            </div>
+          )}
+          <button
+            onClick={logout}
+            className="w-full rounded-lg px-3 py-2 text-left text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          >
+            Sign Out
+          </button>
         </div>
       </aside>
 
@@ -56,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Vision
           </Link>
           <nav className="flex gap-4">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
                 <Link

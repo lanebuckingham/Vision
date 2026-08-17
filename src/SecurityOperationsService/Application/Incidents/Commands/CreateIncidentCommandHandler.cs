@@ -97,13 +97,21 @@ public sealed class CreateIncidentCommandHandler(
                 }
             };
 
+            // Capture the current W3C trace context, if any, so the distributed trace can
+            // be resumed when the background OutboxPublisher later sends this event to SQS.
+            // Absence of a current Activity (e.g. a test or maintenance path) is expected
+            // and must not block outbox creation — TraceParent/TraceState simply stay null.
+            var currentActivity = System.Diagnostics.Activity.Current;
+
             var outboxMessage = new OutboxMessage
             {
                 Id = eventId,
                 EventType = IncidentCreatedV1.EventTypeName,
                 Payload = JsonSerializer.Serialize(integrationEvent),
                 OccurredAt = now,
-                CorrelationId = correlationId
+                CorrelationId = correlationId,
+                TraceParent = currentActivity?.Id,
+                TraceState = currentActivity?.TraceStateString
             };
 
             db.OutboxMessages.Add(outboxMessage);

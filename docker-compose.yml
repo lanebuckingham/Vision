@@ -29,10 +29,153 @@ services:
     volumes:
       - ./deploy/localstack/init:/etc/localstack/init/ready.d
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      # LocalStack's own /_localstack/health endpoint can report healthy
+      # before the ready.d init script (01-create-sqs.sh) has finished
+      # creating the SQS queues. LocalStack's init-status API
+      # (/_localstack/init/ready) deterministically reports `completed: true`
+      # only once every ready.d script has finished, so dependents never race
+      # against not-yet-created queues.
+      test:
+        - "CMD-SHELL"
+        - >-
+          curl -sf http://localhost:4566/_localstack/init/ready
+          | grep -q '"completed": true'
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 20
+      start_period: 10s
+
+  # --- Application services --------------------------------------------
+  #
+  # `docker compose up` starts the full stack by default. For the
+  # infrastructure-only host-run workflow, name just the services you want:
+  #   docker compose up postgres localstack
+  # See docs/development/docker.md.
+
+  security-operations-service:
+    build:
+      context: .
+      dockerfile: src/SecurityOperationsService/Dockerfile
+    ports:
+      - "5163:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__SecurityOperationsDb: "Host=postgres;Database=vision;Username=vision;Password=vision_dev"
+      Cors__AllowedOrigins__0: "http://localhost:3000"
+      Messaging__IncidentCreated__QueueName: "vision-dev-incident-created"
+      Messaging__IncidentCreated__Region: "us-east-1"
+      Messaging__IncidentCreated__ServiceUrl: "http://localstack:4566"
+      Messaging__Outbox__PollIntervalSeconds: "5"
+      Messaging__Outbox__BatchSize: "20"
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      # Cognito__UserPoolId / Cognito__Region / Cognito__ClientId are
+      # intentionally left unset for local Compose. Omitting them preserves
+      # Vision's existing fail-closed authentication behavior (401 on every
+      # protected endpoint) rather than inventing a Docker-only bypass. Set
+      # them via a local .env file (see .env.example) to test real Cognito
+      # login against the containerized backend.
+      Cognito__UserPoolId: "${COGNITO_USER_POOL_ID:-}"
+      Cognito__Region: "${COGNITO_REGION:-}"
+      Cognito__ClientId: "${COGNITO_CLIENT_ID:-}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
+      OTEL_EXPORTER_OTLP_HEADERS: "${OTEL_EXPORTER_OTLP_HEADERS:-}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  work-order-service:
+    build:
+      context: .
+      dockerfile: src/WorkOrderService/Dockerfile
+    ports:
+      - "5250:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__WorkOrderDb: "Host=postgres;Database=vision;Username=vision;Password=vision_dev"
+      Cors__AllowedOrigins__0: "http://localhost:3000"
+      Messaging__IncidentCreated__QueueName: "vision-dev-incident-created"
+      Messaging__IncidentCreated__Region: "us-east-1"
+      Messaging__IncidentCreated__ServiceUrl: "http://localstack:4566"
+      Messaging__IncidentCreated__WaitTimeSeconds: "20"
+      Messaging__IncidentCreated__VisibilityTimeoutSeconds: "60"
+      Messaging__IncidentCreated__MaxNumberOfMessages: "10"
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      Cognito__UserPoolId: "${COGNITO_USER_POOL_ID:-}"
+      Cognito__Region: "${COGNITO_REGION:-}"
+      Cognito__ClientId: "${COGNITO_CLIENT_ID:-}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
+      OTEL_EXPORTER_OTLP_HEADERS: "${OTEL_EXPORTER_OTLP_HEADERS:-}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  credential-service:
+    build:
+      context: .
+      dockerfile: src/CredentialService/Dockerfile
+    ports:
+      - "5223:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__CredentialDb: "Host=postgres;Database=vision;Username=vision;Password=vision_dev"
+      Cors__AllowedOrigins__0: "http://localhost:3000"
+      Cognito__UserPoolId: "${COGNITO_USER_POOL_ID:-}"
+      Cognito__Region: "${COGNITO_REGION:-}"
+      Cognito__ClientId: "${COGNITO_CLIENT_ID:-}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
+      OTEL_EXPORTER_OTLP_HEADERS: "${OTEL_EXPORTER_OTLP_HEADERS:-}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* values are inlined into the browser bundle at build
+        # time. These must be host-reachable URLs (the browser calls them
+        # directly), not Docker-internal service DNS names.
+        NEXT_PUBLIC_API_URL: "http://localhost:5163"
+        NEXT_PUBLIC_WORK_ORDER_API_URL: "http://localhost:5250"
+        NEXT_PUBLIC_CREDENTIAL_API_URL: "http://localhost:5223"
+        NEXT_PUBLIC_COGNITO_DOMAIN: "${NEXT_PUBLIC_COGNITO_DOMAIN:-}"
+        NEXT_PUBLIC_COGNITO_CLIENT_ID: "${NEXT_PUBLIC_COGNITO_CLIENT_ID:-}"
+        NEXT_PUBLIC_COGNITO_REDIRECT_URI: "${NEXT_PUBLIC_COGNITO_REDIRECT_URI:-http://localhost:3000/auth/callback}"
+        NEXT_PUBLIC_COGNITO_LOGOUT_URI: "${NEXT_PUBLIC_COGNITO_LOGOUT_URI:-http://localhost:3000}"
+    ports:
+      - "3000:3000"
+    depends_on:
+      security-operations-service:
+        condition: service_started
+      work-order-service:
+        condition: service_started
+      credential-service:
+        condition: service_started
 
 volumes:
   vision-pgdata:

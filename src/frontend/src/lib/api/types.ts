@@ -280,3 +280,123 @@ export interface TechnicianDetailDto {
   isActive: boolean;
   createdAt: string;
 }
+
+// Credential Service
+export type PersonType = "Employee" | "Contractor";
+export type CredentialAccessLevel = "General" | "Clinical" | "Restricted" | "Security";
+export type CredentialStatus = "Active" | "Expired" | "Revoked";
+
+export interface PersonCredentialSummaryDto {
+  activeCount: number;
+  expiringSoonCount: number;
+  revokedCount: number;
+}
+
+export interface PersonListItemDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  personType: PersonType;
+  isActive: boolean;
+  employeeNumber: string | null;
+  email: string | null;
+  department: string | null;
+  jobTitle: string | null;
+  credentialSummary: PersonCredentialSummaryDto;
+}
+
+export interface PersonCredentialDto {
+  id: string;
+  credentialNumber: string;
+  accessLevel: CredentialAccessLevel;
+  status: CredentialStatus;
+  issuedAt: string;
+  expiresAt: string;
+  isExpiringSoon: boolean;
+  revokedAt: string | null;
+  revocationReason: string | null;
+}
+
+export interface PersonDetailDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  personType: PersonType;
+  isActive: boolean;
+  employeeNumber: string | null;
+  email: string | null;
+  department: string | null;
+  jobTitle: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  credentials: PersonCredentialDto[];
+}
+
+export interface CredentialPersonDto {
+  id: string;
+  displayName: string;
+  personType: PersonType;
+  isActive: boolean;
+  employeeNumber: string | null;
+  department: string | null;
+  jobTitle: string | null;
+}
+
+export interface CredentialListItemDto {
+  id: string;
+  credentialNumber: string;
+  accessLevel: CredentialAccessLevel;
+  status: CredentialStatus;
+  issuedAt: string;
+  expiresAt: string;
+  isExpiringSoon: boolean;
+  revokedAt: string | null;
+  person: CredentialPersonDto;
+}
+
+export interface CredentialDetailPersonDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  personType: PersonType;
+  isActive: boolean;
+  employeeNumber: string | null;
+  email: string | null;
+  department: string | null;
+  jobTitle: string | null;
+}
+
+export interface CredentialDetailDto {
+  id: string;
+  credentialNumber: string;
+  accessLevel: CredentialAccessLevel;
+  status: CredentialStatus;
+  issuedAt: string;
+  expiresAt: string;
+  isExpiringSoon: boolean;
+  revokedAt: string | null;
+  revocationReason: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  person: CredentialDetailPersonDto;
+}
+
+export interface CredentialSummaryDto {
+  activeCount: number;
+  expiringSoonCount: number;
+  expiredCount: number;
+  revokedCount: number;
+}
+
+export interface IssueCredentialRequest {
+  credentialNumber: string;
+  accessLevel: CredentialAccessLevel;
+  expiresAt: string;
+}
+
+export interface RevokeCredentialRequest {
+  reason: string;
+}

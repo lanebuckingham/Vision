@@ -17,19 +17,42 @@ import type {
   TechnicianListItemDto,
   TechnicianDetailDto,
   TechnicianNoteDto,
+  PersonListItemDto,
+  PersonDetailDto,
+  CredentialListItemDto,
+  CredentialDetailDto,
+  CredentialSummaryDto,
+  IssueCredentialRequest,
+  RevokeCredentialRequest,
 } from "./types";
+import { getToken, notifySessionExpired } from "@/lib/auth/tokenStore";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5163";
 const WO_API_BASE = process.env.NEXT_PUBLIC_WORK_ORDER_API_URL || "http://localhost:5250";
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function handleUnauthorized() {
+  // Clear the stale session so the app falls back to the sign-in prompt.
+  notifySessionExpired();
+}
 
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
       ...options?.headers,
     },
   });
+
+  if (res.status === 401) {
+    handleUnauthorized();
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -142,9 +165,12 @@ async function fetchWoApi<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
       ...options?.headers,
     },
   });
+
+  if (res.status === 401) handleUnauthorized();
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -241,4 +267,98 @@ export function getTechnicians(params?: {
 
 export function getTechnicianById(id: string): Promise<TechnicianDetailDto> {
   return fetchWoApi(`/api/v1/technicians/${id}`);
+}
+
+// Credential Service
+const CRED_API_BASE = process.env.NEXT_PUBLIC_CREDENTIAL_API_URL || "http://localhost:5223";
+
+async function fetchCredApi<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${CRED_API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+      ...options?.headers,
+    },
+  });
+
+  if (res.status === 401) handleUnauthorized();
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const message = body?.detail || body?.title || `API error: ${res.status}`;
+    throw new ApiError(res.status, message, body);
+  }
+
+  return res.json();
+}
+
+// People
+export function getPeople(params?: {
+  personType?: string;
+  isActive?: boolean;
+  department?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<PagedList<PersonListItemDto>> {
+  const searchParams = new URLSearchParams();
+  if (params?.personType) searchParams.set("personType", params.personType);
+  if (params?.isActive !== undefined) searchParams.set("isActive", params.isActive.toString());
+  if (params?.department) searchParams.set("department", params.department);
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.page) searchParams.set("page", params.page.toString());
+  if (params?.pageSize) searchParams.set("pageSize", params.pageSize.toString());
+
+  const qs = searchParams.toString();
+  return fetchCredApi(`/api/v1/people${qs ? `?${qs}` : ""}`);
+}
+
+export function getPersonById(id: string): Promise<PersonDetailDto> {
+  return fetchCredApi(`/api/v1/people/${id}`);
+}
+
+// Credentials
+export function getCredentials(params?: {
+  status?: string;
+  accessLevel?: string;
+  personId?: string;
+  expiringSoon?: boolean;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<PagedList<CredentialListItemDto>> {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.set("status", params.status);
+  if (params?.accessLevel) searchParams.set("accessLevel", params.accessLevel);
+  if (params?.personId) searchParams.set("personId", params.personId);
+  if (params?.expiringSoon !== undefined) searchParams.set("expiringSoon", params.expiringSoon.toString());
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.page) searchParams.set("page", params.page.toString());
+  if (params?.pageSize) searchParams.set("pageSize", params.pageSize.toString());
+
+  const qs = searchParams.toString();
+  return fetchCredApi(`/api/v1/credentials${qs ? `?${qs}` : ""}`);
+}
+
+export function getCredentialById(id: string): Promise<CredentialDetailDto> {
+  return fetchCredApi(`/api/v1/credentials/${id}`);
+}
+
+export function getCredentialSummary(): Promise<CredentialSummaryDto> {
+  return fetchCredApi("/api/v1/credentials/summary");
+}
+
+export function issueCredential(personId: string, data: IssueCredentialRequest): Promise<CredentialDetailDto> {
+  return fetchCredApi(`/api/v1/people/${personId}/credentials`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function revokeCredential(credentialId: string, data: RevokeCredentialRequest): Promise<CredentialDetailDto> {
+  return fetchCredApi(`/api/v1/credentials/${credentialId}/revoke`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
