@@ -15,6 +15,7 @@ namespace Vision.WorkOrderService.Tests.Authorization;
 /// it already provisions a real Postgres-backed WorkOrderDbContext with SecurityManager
 /// access.
 /// </summary>
+[Collection("WorkOrderAuth")]
 public class WorkOrderValidationTests : IAsyncLifetime
 {
     private readonly WorkOrderAuthFactory _factory = new();

@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getIncidentById, updateIncidentStatus, getWorkOrders } from "@/lib/api/client";
 import type { IncidentDetailDto, IncidentStatus, WorkOrderListItemDto } from "@/lib/api/types";
 
 export default function IncidentDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const [incident, setIncident] = useState<IncidentDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,61 +15,82 @@ export default function IncidentDetailPage() {
   const [showResolveForm, setShowResolveForm] = useState(false);
   const [resolutionSummary, setResolutionSummary] = useState("");
 
-  // WorkOrder discovery
   const [linkedWorkOrder, setLinkedWorkOrder] = useState<WorkOrderListItemDto | null>(null);
-  const [workOrderPending, setWorkOrderPending] = useState(false);
+  const [timedOutForIncidentId, setTimedOutForIncidentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!params.id) return;
+    let cancelled = false;
     getIncidentById(params.id)
-      .then(setIncident)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .then((result) => {
+        if (!cancelled) setIncident(result);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [params.id]);
 
-  // Discover linked WorkOrder by incidentId
-  const discoverWorkOrder = useCallback(async (incidentId: string) => {
-    try {
-      const result = await getWorkOrders({ incidentId, pageSize: 1 });
-      if (result.items.length > 0) {
-        setLinkedWorkOrder(result.items[0]);
-        setWorkOrderPending(false);
-        return true;
-      }
-    } catch {
-      // WorkOrderService may be unavailable — not critical for incident page
-    }
-    return false;
-  }, []);
-
-  // On incident load, try to find associated WorkOrder
   useEffect(() => {
     if (!incident) return;
-    discoverWorkOrder(incident.id);
-  }, [incident, discoverWorkOrder]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await getWorkOrders({ incidentId: incident.id, pageSize: 1 });
+        if (cancelled) return;
+        if (result.items.length > 0) {
+          setLinkedWorkOrder(result.items[0]);
+        }
+      } catch {
+        // WorkOrderService may be unavailable — not critical for incident page
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [incident]);
 
-  // Bounded polling for qualifying incidents (Critical + asset) that just had WO created async
   useEffect(() => {
     if (!incident) return;
     if (linkedWorkOrder) return;
-    // Only poll for qualifying incidents
     if (incident.severity !== "Critical" || !incident.asset) return;
     if (incident.status === "Resolved") return;
 
-    setWorkOrderPending(true);
     let attempts = 0;
     const maxAttempts = 10;
     const interval = setInterval(async () => {
       attempts++;
-      const found = await discoverWorkOrder(incident.id);
-      if (found || attempts >= maxAttempts) {
+      try {
+        const result = await getWorkOrders({ incidentId: incident.id, pageSize: 1 });
+        if (result.items.length > 0) {
+          setLinkedWorkOrder(result.items[0]);
+          clearInterval(interval);
+          return;
+        }
+      } catch {
+        // WorkOrderService may be unavailable — keep polling until exhausted
+      }
+      if (attempts >= maxAttempts) {
         clearInterval(interval);
-        if (!found) setWorkOrderPending(false);
+        setTimedOutForIncidentId(incident.id);
       }
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [incident, linkedWorkOrder, discoverWorkOrder]);
+  }, [incident, linkedWorkOrder]);
+
+  const workOrderPending =
+    !!incident &&
+    !linkedWorkOrder &&
+    timedOutForIncidentId !== incident.id &&
+    incident.severity === "Critical" &&
+    !!incident.asset &&
+    incident.status !== "Resolved";
 
   const handleTransition = async (newStatus: IncidentStatus, summary?: string) => {
     if (!incident) return;

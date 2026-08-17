@@ -60,6 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
 
   const handleCallback = useCallback(async (code: string, returnedState: string | null) => {
+    // Yield so OAuth validation/setState is not synchronous with the mounting effect.
+    await Promise.resolve();
     try {
       // Validate state
       const storedState = sessionStorage.getItem("vision_oauth_state");
@@ -139,13 +141,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const code = params.get("code");
     const returnedState = params.get("state");
 
-    if (code) {
-      void handleCallback(code, returnedState);
-      window.history.replaceState({}, "", window.location.pathname);
-    } else {
+    let cancelled = false;
+
+    const run = async () => {
+      if (code) {
+        window.history.replaceState({}, "", window.location.pathname);
+        await handleCallback(code, returnedState);
+        return;
+      }
+
+      await Promise.resolve();
+      if (cancelled) return;
       restoreSession();
       setIsLoading(false);
-    }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
   }, [handleCallback, restoreSession]);
 
   const login = useCallback(async () => {

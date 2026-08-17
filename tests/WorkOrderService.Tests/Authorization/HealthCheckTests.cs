@@ -9,6 +9,7 @@ namespace Vision.WorkOrderService.Tests.Authorization;
 /// framework-generated JSON. Reuses the authorization test factory/database since it
 /// already provisions a real Postgres-backed WorkOrderDbContext.
 /// </summary>
+[Collection("WorkOrderAuth")]
 public class HealthCheckTests : IAsyncLifetime
 {
     private readonly WorkOrderAuthFactory _factory = new();

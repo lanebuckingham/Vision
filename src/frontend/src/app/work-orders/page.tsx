@@ -19,8 +19,7 @@ export default function WorkOrderListPage() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    let cancelled = false;
     getWorkOrders({
       status: statusFilter || undefined,
       priority: priorityFilter || undefined,
@@ -28,9 +27,21 @@ export default function WorkOrderListPage() {
       page,
       pageSize: 25,
     })
-      .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load work orders"))
-      .finally(() => setLoading(false));
+      .then((result) => {
+        if (cancelled) return;
+        setData(result);
+        setError(null);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Failed to load work orders");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [statusFilter, priorityFilter, search, page]);
 
   return (

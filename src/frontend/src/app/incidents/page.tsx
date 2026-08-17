@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getIncidents } from "@/lib/api/client";
 import type { PagedList, IncidentListItemDto, IncidentSeverity, IncidentStatus } from "@/lib/api/types";
@@ -18,28 +18,31 @@ export default function IncidentsPage() {
   const [severityFilter, setSeverityFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await getIncidents({
-        search: search || undefined,
-        status: statusFilter || undefined,
-        severity: severityFilter || undefined,
-        page,
-        pageSize: 20,
-      });
-      setData(result);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load incidents");
-    } finally {
-      setLoading(false);
-    }
-  }, [search, statusFilter, severityFilter, page]);
-
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let cancelled = false;
+    getIncidents({
+      search: search || undefined,
+      status: statusFilter || undefined,
+      severity: severityFilter || undefined,
+      page,
+      pageSize: 20,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        setData(result);
+        setError(null);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Failed to load incidents");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [search, statusFilter, severityFilter, page]);
 
   const totalPages = data ? Math.ceil(data.totalCount / data.pageSize) : 0;
 

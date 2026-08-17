@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getAssets } from "@/lib/api/client";
 import type { PagedList, AssetListItemDto, AssetStatus, AssetType } from "@/lib/api/types";
@@ -23,28 +23,31 @@ export default function AssetsPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await getAssets({
-        search: search || undefined,
-        status: statusFilter || undefined,
-        type: typeFilter || undefined,
-        page,
-        pageSize: 20,
-      });
-      setData(result);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load assets");
-    } finally {
-      setLoading(false);
-    }
-  }, [search, statusFilter, typeFilter, page]);
-
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let cancelled = false;
+    getAssets({
+      search: search || undefined,
+      status: statusFilter || undefined,
+      type: typeFilter || undefined,
+      page,
+      pageSize: 20,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        setData(result);
+        setError(null);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Failed to load assets");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [search, statusFilter, typeFilter, page]);
 
   const totalPages = data ? Math.ceil(data.totalCount / data.pageSize) : 0;
 

@@ -24,6 +24,7 @@ namespace Vision.WorkOrderService.Tests.Authorization;
 /// Ownership tests seed isolated Technicians and WorkOrders so the assertions never depend
 /// on shared seed rows mutated by other tests.
 /// </summary>
+[Collection("WorkOrderAuth")]
 public class WorkOrderAuthorizationTests : IAsyncLifetime
 {
     private readonly WorkOrderAuthFactory _factory = new();

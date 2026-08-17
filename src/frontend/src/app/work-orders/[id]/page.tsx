@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthContext";
 import {
@@ -23,7 +23,6 @@ import type {
 
 export default function WorkOrderDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { hasRole } = useAuth();
   const id = params.id as string;
 
@@ -48,11 +47,20 @@ export default function WorkOrderDetailPage() {
   const [showCompleteForm, setShowCompleteForm] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     getWorkOrderById(id)
-      .then(setWo)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load work order"))
-      .finally(() => setLoading(false));
+      .then((result) => {
+        if (!cancelled) setWo(result);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load work order");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const loadTechnicians = () => {
