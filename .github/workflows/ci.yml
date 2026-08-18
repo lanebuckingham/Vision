@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend build & tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Start test infrastructure
+        run: docker compose up -d postgres localstack
+
+      - name: Wait for test infrastructure
+        run: |
+          set -euo pipefail
+
+          # LocalStack's Compose healthcheck can take up to ~110s in the
+          # worst case (start_period 10s + 20 retries * 5s). Bound the wait
+          # just above that rather than using a fixed sleep.
+          for attempt in $(seq 1 60); do
+            postgres_status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}unavailable{{end}}' vision-postgres 2>/dev/null || echo unavailable)"
+            localstack_status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}unavailable{{end}}' vision-localstack 2>/dev/null || echo unavailable)"
+
+            echo "Attempt ${attempt}/60: postgres=${postgres_status} localstack=${localstack_status}"
+
+            if [ "${postgres_status}" = "healthy" ] && [ "${localstack_status}" = "healthy" ]; then
+              echo "postgres and localstack are healthy"
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          echo "Timed out waiting for postgres and localstack to become healthy"
+          docker compose ps
+          docker compose logs postgres
+          docker compose logs localstack
+          exit 1
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build
+
+      - name: Infrastructure diagnostics
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs postgres
+          docker compose logs localstack
+
+      - name: Stop test infrastructure
+        if: always()
+        run: docker compose down -v
+
+  frontend:
+    name: Frontend lint, tests & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build application images
+        run: docker compose build

@@ -561,20 +561,17 @@ For the MVP, test effort should prioritize important business behavior over achi
 
 # CI/CD
 
-GitHub Actions should provide a production-shaped pipeline.
+Continuous integration is implemented as a GitHub Actions workflow. See
+[`docs/development/ci.md`](docs/development/ci.md) for triggers, the three
+jobs, and the local-equivalent commands.
 
-Expected stages include:
+The current `CI` workflow runs on pull requests to `main`, pushes to
+`main`, and manual dispatch. It restores/builds/tests the backend (with
+Compose PostgreSQL and LocalStack), lints/tests/builds the frontend, and
+builds the four application images. It does not deploy or publish images.
 
-1. Restore dependencies
-2. Build frontend
-3. Build backend services
-4. Run automated tests
-5. Perform static analysis
-6. Build Docker images
-7. Perform container/security scanning where practical
-8. Publish deployment artifacts/images
-9. Deploy
-10. Perform basic post-deployment verification
+Later continuous-deployment stages (scanning, artifact publishing, deploy,
+and post-deployment verification) remain out of this workflow.
 
 ---
 

@@ -94,7 +94,8 @@ docker compose up postgres localstack
 ```
 
 This is the same workflow `localstack-sqs-setup.md` describes; nothing about
-it changed with the addition of the four application services. When running
+it changed with the addition of the four application services. GitHub Actions
+CI starts these same two services for backend tests; see [`ci.md`](./ci.md). When running
 services on the host this way, use `localhost` endpoints
 (`Host=localhost;...`, `http://localhost:4566`) as already documented in
 each service's `appsettings.Development.json`, not the in-container service
