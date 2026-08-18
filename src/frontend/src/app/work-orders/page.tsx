@@ -18,6 +18,11 @@ export default function WorkOrderListPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
+  const beginQueryRefresh = () => {
+    setLoading(true);
+    setError(null);
+  };
+
   useEffect(() => {
     let cancelled = false;
     getWorkOrders({
@@ -63,7 +68,7 @@ export default function WorkOrderListPage() {
       <div className="flex flex-wrap gap-3">
         <select
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          onChange={(e) => { beginQueryRefresh(); setStatusFilter(e.target.value); setPage(1); }}
           aria-label="Filter by status"
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         >
@@ -74,7 +79,7 @@ export default function WorkOrderListPage() {
         </select>
         <select
           value={priorityFilter}
-          onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}
+          onChange={(e) => { beginQueryRefresh(); setPriorityFilter(e.target.value); setPage(1); }}
           aria-label="Filter by priority"
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         >
@@ -87,7 +92,7 @@ export default function WorkOrderListPage() {
           type="text"
           placeholder="Search work orders..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => { beginQueryRefresh(); setSearch(e.target.value); setPage(1); }}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         />
       </div>
@@ -147,14 +152,14 @@ export default function WorkOrderListPage() {
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => { beginQueryRefresh(); setPage((p) => Math.max(1, p - 1)); }}
                   disabled={page === 1}
                   className="rounded-lg border border-gray-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
                 >
                   Previous
                 </button>
                 <button
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => { beginQueryRefresh(); setPage((p) => p + 1); }}
                   disabled={page >= Math.ceil(data.totalCount / data.pageSize)}
                   className="rounded-lg border border-gray-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
                 >

@@ -161,7 +161,9 @@ export default function WorkOrderDetailPage() {
     }
   };
 
-  if (loading) {
+  const waitingForCurrentOrder = loading || (wo != null && wo.id !== id);
+
+  if (waitingForCurrentOrder) {
     return (
       <div className="space-y-4 animate-pulse">
         <div className="h-8 w-48 rounded bg-gray-200 dark:bg-gray-700" />

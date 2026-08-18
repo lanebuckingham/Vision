@@ -23,6 +23,11 @@ export default function AssetsPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [page, setPage] = useState(1);
 
+  const beginQueryRefresh = () => {
+    setLoading(true);
+    setError(null);
+  };
+
   useEffect(() => {
     let cancelled = false;
     getAssets({
@@ -61,13 +66,13 @@ export default function AssetsPage() {
           type="search"
           placeholder="Search assets..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => { beginQueryRefresh(); setSearch(e.target.value); setPage(1); }}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           aria-label="Search assets"
         />
         <select
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          onChange={(e) => { beginQueryRefresh(); setStatusFilter(e.target.value); setPage(1); }}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           aria-label="Filter by status"
         >
@@ -76,7 +81,7 @@ export default function AssetsPage() {
         </select>
         <select
           value={typeFilter}
-          onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+          onChange={(e) => { beginQueryRefresh(); setTypeFilter(e.target.value); setPage(1); }}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           aria-label="Filter by type"
         >
@@ -153,7 +158,7 @@ export default function AssetsPage() {
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => { beginQueryRefresh(); setPage((p) => Math.max(1, p - 1)); }}
                   disabled={page <= 1}
                   className="rounded border border-gray-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-gray-700"
                 >
@@ -163,7 +168,7 @@ export default function AssetsPage() {
                   Page {page} of {totalPages}
                 </span>
                 <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() => { beginQueryRefresh(); setPage((p) => Math.min(totalPages, p + 1)); }}
                   disabled={page >= totalPages}
                   className="rounded border border-gray-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-gray-700"
                 >
