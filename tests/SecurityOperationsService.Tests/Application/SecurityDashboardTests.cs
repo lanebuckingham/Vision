@@ -136,13 +136,21 @@ public class SecurityDashboardTests : IAsyncLifetime
         var createdActivity = dashboard!.RecentActivity
             .FirstOrDefault(a => a.IncidentId == createdIncidentId && a.Type == "IncidentCreated");
         Assert.NotNull(createdActivity);
-        Assert.Equal(now.AddMinutes(10), createdActivity!.OccurredAt);
+        Assert.Equal(
+            TruncateToPostgresTimestamp(now.AddMinutes(10)),
+            TruncateToPostgresTimestamp(createdActivity!.OccurredAt));
 
         var resolvedActivity = dashboard.RecentActivity
             .FirstOrDefault(a => a.IncidentId == resolvedIncidentId && a.Type == "IncidentResolved");
         Assert.NotNull(resolvedActivity);
-        Assert.Equal(now.AddMinutes(9), resolvedActivity!.OccurredAt);
+        Assert.Equal(
+            TruncateToPostgresTimestamp(now.AddMinutes(9)),
+            TruncateToPostgresTimestamp(resolvedActivity!.OccurredAt));
     }
+
+    // PostgreSQL timestamptz stores microseconds; DateTimeOffset ticks are 100ns.
+    private static DateTimeOffset TruncateToPostgresTimestamp(DateTimeOffset value) =>
+        new(value.Ticks - (value.Ticks % TimeSpan.TicksPerMicrosecond), value.Offset);
 
     // === Query smoke tests ===
 

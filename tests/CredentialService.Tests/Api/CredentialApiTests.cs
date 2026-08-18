@@ -213,9 +213,15 @@ public class CredentialApiTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
         var secondBody = await second.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
         Assert.Equal("Revoked", secondBody.GetProperty("status").GetString());
-        Assert.Equal(originalRevokedAt, secondBody.GetProperty("revokedAt").GetString());
+        Assert.Equal(
+            TruncateToPostgresTimestamp(DateTimeOffset.Parse(originalRevokedAt!)),
+            TruncateToPostgresTimestamp(DateTimeOffset.Parse(secondBody.GetProperty("revokedAt").GetString()!)));
         Assert.Equal("Original reason", secondBody.GetProperty("revocationReason").GetString());
     }
+
+    // PostgreSQL timestamptz stores microseconds; DateTimeOffset ticks are 100ns.
+    private static DateTimeOffset TruncateToPostgresTimestamp(DateTimeOffset value) =>
+        new(value.Ticks - (value.Ticks % TimeSpan.TicksPerMicrosecond), value.Offset);
 
     // === READ TESTS ===
 

@@ -41,7 +41,8 @@ ENV NEXT_PUBLIC_COGNITO_LOGOUT_URI=${NEXT_PUBLIC_COGNITO_LOGOUT_URI}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+# Keep an empty public/ so the runtime COPY succeeds when there are no static assets.
+RUN mkdir -p public && npm run build
 
 # ---- Runtime stage ----------------------------------------------------------
 FROM node:22-alpine AS runtime
